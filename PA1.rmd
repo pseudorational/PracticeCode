@@ -1,0 +1,98 @@
+Exploratory Analysis of Data Collected from Wearable Device
+=================================================================
+
+### Loading and preprocessing the data
+
+```{r a, echo=FALSE}
+setwd("c:/myfiles/learning/data")
+data = read.csv("activity.csv")
+str(data)
+head(data)
+```
+
+### What is mean total number of steps taken per day?
+1. Total number of steps taken per day
+```{r b}
+tapply(data$steps,data$date,sum,na.rm=TRUE)
+```
+
+2. Histogram of the total number of steps taken each day
+```{r c}
+library(ggplot2)
+ggplot(data=data,aes(x=date,y=steps))+
+  geom_bar(stat="identity")
+```
+
+3. mean and median of the total number of steps taken per day
+```{r d}
+meanSteps = tapply(data$steps,data$date,mean,na.rm=TRUE)
+medianSteps = tapply(data$steps,data$date,median,na.rm=TRUE)
+data.frame(MeanSteps=meanSteps,MedianSteps = medianSteps)
+```
+
+
+
+### What is the average daily activity pattern?  
+1. Time series plot
+```{r e}
+meanStepsForEachInterval = tapply(data$steps,data$interval,mean,na.rm=TRUE)
+df = as.data.frame(meanStepsForEachInterval)
+df$interval = as.numeric(row.names(df))
+#plot(x=as.numeric(row.names(df)),y=df$meanStepsForEachInterval,type="l")
+ggplot(data=df,aes(x=interval,y=meanStepsForEachInterval))+
+  geom_line()+ylab("Mean Steps")
+```
+
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r f}
+df[df$meanStepsForEachInterval==max(df$meanStepsForEachInterval),]
+```
+
+### Imputing missing values
+1. Number of missing values in the dataset
+```{r g}
+sum(!complete.cases(data))
+
+```
+
+
+2. (and 3) Devise missing value strategy and replace value
+```{r h}
+# replacing missing values with overall mean.. very elementary strategy
+# sum(is.na(data$interval)); sum(is.na(data$date)); sum(is.na(data$steps))
+for (i in 1:nrow(data)){
+  if(is.na(data$steps[i])){
+    data$steps[i]=mean(data$steps,na.rm=TRUE)
+  }
+}
+```
+
+
+4 histogram of number of steps. Mean and median of total number of steps taken per day
+```{r i}
+ggplot(data=data,aes(x=date,y=steps))+
+  geom_bar(stat="identity")
+meanSteps = tapply(data$steps,data$date,mean,na.rm=TRUE)
+medianSteps = tapply(data$steps,data$date,median,na.rm=TRUE)
+data.frame(MeanSteps=meanSteps,MedianSteps = medianSteps)
+```
+
+Imputation resulted in values that are slightly different from first part of the assignment but only for days that had no data. This is because of the elementary imputation strategy used. 
+
+
+
+### Are there differences in activity patterns between weekdays and weekends?
+1. Created a new factor variable to indicate weekday/weekend
+```{r j}
+data$day = as.numeric(weekdays(as.Date(data$date)) == "Saturday"| weekdays(as.Date(data$date))=="Sunday")
+data$day = factor(x = data$day,labels=c("Weekday","Weekend"))
+```
+
+2. Panel Plot
+```{r k}
+data$meanSteps = tapply(data$steps,data$interval,mean,na.rm=TRUE)
+ggplot(data=data,aes(x=interval,y=meanSteps))+
+  geom_line()+ylab("Mean Steps")+
+  facet_grid(.~day)
+```
+
